@@ -29,11 +29,15 @@ func main() {
 		url := scanner.Text()
 
 		resp, err := client.Get(url)
-		if err != nil {
-			log.Fatalf("%s\n", err)
+		if clean_url := url[8:]; err != nil {
+			fmt.Printf("%s - DOWN\n", clean_url)
+			continue
+		} else if resp.StatusCode == 200 {
+			fmt.Printf("%s - UP\n", clean_url)
+		} else {
+			fmt.Printf("%s - DOWN\n", clean_url)
 		}
 
-		fmt.Printf("%s\n", resp.Status)
 		resp.Body.Close()
 	}
 
