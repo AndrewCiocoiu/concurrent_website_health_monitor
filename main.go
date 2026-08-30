@@ -52,7 +52,7 @@ func main() {
 	}
 	defer file.Close()
 
-	client := &http.Client{Timeout: 5 & time.Second}
+	client := &http.Client{Timeout: 5 * time.Second}
 
 	scanner := bufio.NewScanner(file)
 
