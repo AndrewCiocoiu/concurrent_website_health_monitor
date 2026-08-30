@@ -6,9 +6,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 )
 
-func checkUrl(url string, client *http.Client) {
+func checkUrl(url string, client *http.Client, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	resp, err := client.Get(url)
 	if err != nil {
 		fmt.Printf("%s - DOWN\n", url)
@@ -23,6 +26,8 @@ func checkUrl(url string, client *http.Client) {
 }
 
 func main() {
+	var wg sync.WaitGroup
+
 	if len(os.Args) < 2 {
 		log.Fatalf("You forgot to enter the filename as a CLI argument! Please do so!")
 	}
@@ -41,10 +46,14 @@ func main() {
 
 	for scanner.Scan() {
 		url := scanner.Text()
-		checkUrl(url, client)
+
+		wg.Add(1)
+		go checkUrl(url, client, &wg)
 	}
 
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("There was an error while scanning the file: %s\n", err)
 	}
+
+	wg.Wait()
 }
