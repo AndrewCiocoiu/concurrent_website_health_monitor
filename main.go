@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 )
 
 type WebsiteStatus struct {
@@ -51,7 +52,7 @@ func main() {
 	}
 	defer file.Close()
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 5 & time.Second}
 
 	scanner := bufio.NewScanner(file)
 
