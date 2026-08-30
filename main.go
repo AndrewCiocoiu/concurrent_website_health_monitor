@@ -8,7 +8,13 @@ import (
 )
 
 func main() {
-	file, err := os.Open("targets.txt")
+	if len(os.Args) < 2 {
+		log.Fatalf("You forgot to enter the filename as a CLI argument! Please do so!")
+	}
+
+	file_name := os.Args[1]
+
+	file, err := os.Open(file_name)
 	if err != nil {
 		log.Fatalf("Failed to open file: %s\n", err)
 	}
