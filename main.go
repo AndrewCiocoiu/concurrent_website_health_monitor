@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 )
 
@@ -20,11 +21,20 @@ func main() {
 	}
 	defer file.Close()
 
+	client := &http.Client{}
+
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Printf("%s\n", line)
+		url := scanner.Text()
+
+		resp, err := client.Get(url)
+		if err != nil {
+			log.Fatalf("%s\n", err)
+		}
+
+		fmt.Printf("%s\n", resp.Status)
+		resp.Body.Close()
 	}
 
 	if err := scanner.Err(); err != nil {
