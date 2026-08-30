@@ -9,20 +9,27 @@ import (
 	"sync"
 )
 
-func checkUrl(url string, client *http.Client, wg *sync.WaitGroup, ch chan string) {
-	defer wg.Done()
+type WebsiteStatus struct {
+	url    string
+	status string
+}
 
+func checkUrl(url string, client *http.Client, wg *sync.WaitGroup, ch chan WebsiteStatus) {
+	defer wg.Done()
 	resp, err := client.Get(url)
+
+	new_website := WebsiteStatus{url: url}
+
 	if err != nil {
-		res := fmt.Sprintf("%s - DOWN\n", url)
-		ch <- res
+		new_website.status = "DOWN"
+		ch <- new_website
 		return
 	} else if resp.StatusCode == 200 {
-		res := fmt.Sprintf("%s - UP\n", url)
-		ch <- res
+		new_website.status = "UP"
+		ch <- new_website
 	} else {
-		res := fmt.Sprintf("%s - DOWN\n", url)
-		ch <- res
+		new_website.status = "DOWN"
+		ch <- new_website
 	}
 
 	resp.Body.Close()
@@ -30,7 +37,7 @@ func checkUrl(url string, client *http.Client, wg *sync.WaitGroup, ch chan strin
 
 func main() {
 	var wg sync.WaitGroup
-	ch := make(chan string)
+	ch := make(chan WebsiteStatus)
 	defer close(ch)
 
 	if len(os.Args) < 2 {
@@ -60,8 +67,8 @@ func main() {
 		log.Fatalf("There was an error while scanning the file: %s\n", err)
 	}
 
-	for val := range ch {
-		fmt.Printf("%s", val)
+	for websiteStatus := range ch {
+		fmt.Printf("%s - %s\n", websiteStatus.url, websiteStatus.status)
 	}
 
 	wg.Wait()
