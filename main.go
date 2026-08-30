@@ -67,14 +67,26 @@ func main() {
 		log.Fatalf("There was an error while scanning the file: %s\n", err)
 	}
 
+	//Prevents deadlock
 	go func() {
 		wg.Wait()
 
 		close(ch)
 	}()
 
-	for websiteStatus := range ch {
-		fmt.Printf("%s - %s\n", websiteStatus.url, websiteStatus.status)
+	output_file, err := os.Create("results.txt")
+	if err != nil {
+		log.Fatalf("%s\n", err)
 	}
+	defer output_file.Close()
+
+	for websiteStatus := range ch {
+		_, err = output_file.WriteString(fmt.Sprintf("%s - %s\n", websiteStatus.url, websiteStatus.status))
+		if err != nil {
+			log.Fatalf("%s\n", err)
+		}
+	}
+
+	fmt.Printf("Done! Results written in: results.txt!\n")
 
 }
