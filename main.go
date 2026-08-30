@@ -8,6 +8,20 @@ import (
 	"os"
 )
 
+func checkUrl(url string, client *http.Client) {
+	resp, err := client.Get(url)
+	if err != nil {
+		fmt.Printf("%s - DOWN\n", url)
+		return
+	} else if resp.StatusCode == 200 {
+		fmt.Printf("%s - UP\n", url)
+	} else {
+		fmt.Printf("%s - DOWN\n", url)
+	}
+
+	resp.Body.Close()
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		log.Fatalf("You forgot to enter the filename as a CLI argument! Please do so!")
@@ -27,18 +41,7 @@ func main() {
 
 	for scanner.Scan() {
 		url := scanner.Text()
-
-		resp, err := client.Get(url)
-		if err != nil {
-			fmt.Printf("%s - DOWN\n", url)
-			continue
-		} else if resp.StatusCode == 200 {
-			fmt.Printf("%s - UP\n", url)
-		} else {
-			fmt.Printf("%s - DOWN\n", url)
-		}
-
-		resp.Body.Close()
+		checkUrl(url, client)
 	}
 
 	if err := scanner.Err(); err != nil {
