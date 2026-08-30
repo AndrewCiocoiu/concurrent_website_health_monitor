@@ -10,5 +10,5 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to open file: %s\n", err)
 	}
-	println(file.Name())
+	defer file.Close()
 }
