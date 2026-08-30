@@ -38,7 +38,6 @@ func checkUrl(url string, client *http.Client, wg *sync.WaitGroup, ch chan Websi
 func main() {
 	var wg sync.WaitGroup
 	ch := make(chan WebsiteStatus)
-	defer close(ch)
 
 	if len(os.Args) < 2 {
 		log.Fatalf("You forgot to enter the filename as a CLI argument! Please do so!")
@@ -67,9 +66,14 @@ func main() {
 		log.Fatalf("There was an error while scanning the file: %s\n", err)
 	}
 
+	go func() {
+		wg.Wait()
+
+		close(ch)
+	}()
+
 	for websiteStatus := range ch {
 		fmt.Printf("%s - %s\n", websiteStatus.url, websiteStatus.status)
 	}
 
-	wg.Wait()
 }
