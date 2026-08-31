@@ -60,8 +60,9 @@ func main() {
 
 	//Launch 15 workers to prevent socket exhaustion
 	for i := 0; i < 15; i++ {
-		go worker(jobs, client, &wg, ch)
+		//I should always always have wg.Add() BEFORE I call the Go Routine to prevent race conditions
 		wg.Add(1)
+		go worker(jobs, client, &wg, ch)
 	}
 
 	scanner := bufio.NewScanner(file)
