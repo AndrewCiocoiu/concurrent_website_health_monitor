@@ -15,7 +15,7 @@ type WebsiteStatus struct {
 	status string
 }
 
-func worker(jobs chan string, client *http.Client, wg *sync.WaitGroup, ch chan WebsiteStatus) {
+func worker(jobs chan string, client *http.Client, wg *sync.WaitGroup, statuses chan WebsiteStatus) {
 	defer wg.Done()
 
 	for url := range jobs {
@@ -25,14 +25,14 @@ func worker(jobs chan string, client *http.Client, wg *sync.WaitGroup, ch chan W
 
 		if err != nil {
 			new_website.status = "DOWN"
-			ch <- new_website
+			statuses <- new_website
 			continue
 		} else if resp.StatusCode == 200 {
 			new_website.status = "UP"
-			ch <- new_website
+			statuses <- new_website
 		} else {
 			new_website.status = "DOWN"
-			ch <- new_website
+			statuses <- new_website
 		}
 
 		resp.Body.Close()
@@ -41,7 +41,7 @@ func worker(jobs chan string, client *http.Client, wg *sync.WaitGroup, ch chan W
 
 func main() {
 	var wg sync.WaitGroup
-	ch := make(chan WebsiteStatus)
+	statutes := make(chan WebsiteStatus)
 	jobs := make(chan string)
 
 	if len(os.Args) < 2 {
@@ -62,27 +62,31 @@ func main() {
 	for i := 0; i < 15; i++ {
 		//I should always always have wg.Add() BEFORE I call the Go Routine to prevent race conditions
 		wg.Add(1)
-		go worker(jobs, client, &wg, ch)
+		go worker(jobs, client, &wg, statutes)
 	}
 
-	scanner := bufio.NewScanner(file)
+	//Prevents deadlock by allowing main to advance past jobs <- url allowing it to actually drain the jobs and statuses
+	go func() {
+		scanner := bufio.NewScanner(file)
 
-	for scanner.Scan() {
-		url := scanner.Text()
-		jobs <- url
-	}
-	//Close the jobs channel as soon as I put all the jobs in so that my workers dont become deadlocked when they finnish all jobs
-	close(jobs)
+		for scanner.Scan() {
+			url := scanner.Text()
+			jobs <- url
+		}
 
-	if err := scanner.Err(); err != nil {
-		log.Fatalf("There was an error while scanning the file: %s\n", err)
-	}
+		//Close the jobs channel as soon as I put all the jobs in so that my workers dont become deadlocked when they finnish all jobs
+		close(jobs)
+
+		if err := scanner.Err(); err != nil {
+			log.Fatalf("There was an error while scanning the file: %s\n", err)
+		}
+	}()
 
 	//Prevents deadlock
 	go func() {
 		wg.Wait()
 
-		close(ch)
+		close(statutes)
 	}()
 
 	output_file, err := os.Create("results.txt")
@@ -91,7 +95,7 @@ func main() {
 	}
 	defer output_file.Close()
 
-	for websiteStatus := range ch {
+	for websiteStatus := range statutes {
 		_, err = output_file.WriteString(fmt.Sprintf("%s - %s\n", websiteStatus.url, websiteStatus.status))
 		if err != nil {
 			log.Fatalf("%s\n", err)
